@@ -56,8 +56,10 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<BeverageWidget> beverages = [];
+  List<BeverageWidget> allBeverages = [];
   List<NewBeverage> beverageModels = [];
   TextEditingController _searchController = TextEditingController();
+  bool hasSearchforBeverage = false;
 
   @override
   void initState() {
@@ -73,8 +75,8 @@ class _MyHomePageState extends State<MyHomePage> {
       final responseData =
           json.decode(response.body)["drinks"] as List<dynamic>;
       dev.log('$responseData', name: 'checking for response');
-      setState(() {
-        for (var element in responseData) {
+      for (var element in responseData) {
+        setState(() {
           beverageModels.add(
             NewBeverage(
               id: element['idDrink'],
@@ -85,35 +87,54 @@ class _MyHomePageState extends State<MyHomePage> {
               imageUrl: element['strDrinkThumb'],
             ),
           );
-          dev.log('$beverageModels', name: 'checking for beverage modesl');
-          for (var bevergeModel in beverageModels) {
-            beverages.add(
-              BeverageWidget(
-                beverageModel: bevergeModel,
-              ),
-            );
-          }
-          //  _beveragesList.add(
-          //    ListTile(
-          //      title: Text('${element['strAlcoholic']}'),
-          //    ),
-          //  );
-        }
-        dev.log('$beverages', name: 'beverage list');
-      });
+        });
+        dev.log('$beverageModels', name: 'checking for beverage modesl');
+      }
+      for (var bevergeModel in beverageModels) {
+        setState(() {
+          beverages.add(
+            BeverageWidget(
+              beverageModel: bevergeModel,
+            ),
+          );
+          allBeverages.add(
+            BeverageWidget(
+              beverageModel: bevergeModel,
+            ),
+          );
+        });
+      }
+      //  _beveragesList.add(
+      //    ListTile(
+      //      title: Text('${element['strAlcoholic']}'),
+      //    ),
+      //  );
+      dev.log('$beverages', name: 'beverage list');
+      return beverages;
     } catch (e) {
       rethrow;
     }
   }
 
   onSearchfieldsubmitted(String text) {
-    List<BeverageWidget> filteredBeverage = beverages
-        .where((beverage) =>
-            beverage.beverageModel.name.toLowerCase().contains(text))
-        .toList();
-    setState(() {
-      beverages = filteredBeverage;
-    });
+    List<BeverageWidget> filteredBeverage = beverages.where((beverage) {
+      final searchValue = beverage.beverageModel.name;
+      final input = text;
+      return searchValue.contains(input);
+    }).toList();
+    return SingleChildScrollView(
+      child: Column(
+        children: filteredBeverage,
+      ),
+    );
+  }
+
+  buildCards() {
+    return SingleChildScrollView(
+      child: Column(
+        children: beverages,
+      ),
+    );
   }
 
   @override
@@ -121,49 +142,59 @@ class _MyHomePageState extends State<MyHomePage> {
     return RefreshIndicator(
       onRefresh: () => getBeveragesData(),
       child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          title: Container(
-            height: 50,
-            color: Colors.white,
-            child: TextFormField(
-              controller: _searchController,
-              onChanged: (value) => onSearchfieldsubmitted(value),
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.only(top: 30),
-                prefixIcon: const Icon(
-                  Icons.search,
-                  color: Colors.black,
-                ),
-                hintText: 'Search for your beverage here',
-                hintStyle: const TextStyle(color: Colors.black),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: const BorderSide(
-                    color: Colors.grey,
-                    width: 0.99,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            title: Container(
+              height: 50,
+              color: Colors.white,
+              child: TextFormField(
+                controller: _searchController,
+                onChanged: (value) {
+                  if (_searchController.text.isEmpty) {
+                    setState(() {
+                      hasSearchforBeverage = false;
+                    });
+                  } else {
+                    setState(() {
+                      hasSearchforBeverage = true;
+                    });
+                  }
+                  dev.log('$hasSearchforBeverage', name: 'checking for search');
+                },
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.only(top: 30),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: Colors.black,
                   ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: const BorderSide(
-                    color: Colors.grey,
-                    width: 0.99,
+                  hintText: 'Search for your beverage here',
+                  hintStyle: const TextStyle(color: Colors.black),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: const BorderSide(
+                      color: Colors.grey,
+                      width: 0.99,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: const BorderSide(
+                      color: Colors.grey,
+                      width: 0.99,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        body: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: beverages,
-            ),
+          body: hasSearchforBeverage
+              ? onSearchfieldsubmitted(_searchController.text)
+              : SingleChildScrollView(
+                  child: Column(
+                    children: beverages,
+                  ),
+                ) // This trailing comma makes auto-formatting nicer for build methods.
           ),
-        ), // This trailing comma makes auto-formatting nicer for build methods.
-      ),
     );
   }
 }
